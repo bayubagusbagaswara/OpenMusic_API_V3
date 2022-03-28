@@ -1,12 +1,14 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
-const { mapAlbumDBToModel, mapSongDBToModel } = require('../../utils');
+const { mapAlbumDBToModel, mapSongDBToModel, mapUserAlbumLikesDBToModel } = require('../../utils');
 const NotFoundError = require('../../exceptions/NotFoundError');
 
 class AlbumsService {
-  constructor() {
+  // kita inject cacheService di albumsService
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async addAlbum({ name, year }) {
@@ -17,9 +19,13 @@ class AlbumsService {
     };
 
     const result = await this._pool.query(query);
+
     if (!result.rows[0].id) {
       throw new InvariantError('Album gagal ditambahkan');
     }
+
+    // jika berhasil addAlbum, maka delete cache
+    await this._cacheService.delete('albums');
 
     return result.rows[0].id;
   }
@@ -32,10 +38,10 @@ class AlbumsService {
       const query = {
         text: 'SELECT * FROM albums',
       };
-      const { rows } = await this._pool.query(query);
-      await this._cacheService.set('albums', JSON.stringify(rows));
+      const { results } = await this._pool.query(query);
+      await this._cacheService.set('albums', JSON.stringify(results));
       // return rows;
-      return { albums: { ...rows } };
+      return { albums: { ...results.map(mapAlbumDBToModel) } };
     }
   }
 
@@ -69,6 +75,8 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new NotFoundError('Gagal memperbarui album. Id tidak ditemukan');
     }
+
+    await this._cacheService.delete(`album:${id}`);
   }
 
   async deleteAlbumById(id) {
@@ -82,6 +90,8 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new NotFoundError('Album gagal dihapus. Id tidak ditemukan');
     }
+
+    await this._cacheService.delete(`album:${id}`);
   }
 
   async getSongsByAlbumId(id) {
@@ -114,6 +124,8 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new InvariantError('Cover gagal ditambahkan');
     }
+
+    await this._cacheService.delete(`album:${albumId}`);
   }
 
   /** Likes Album */
@@ -133,6 +145,8 @@ class AlbumsService {
       // jika sudah ada, maka lakukan dislike pada album
       await this.userDislikeAlbums(userId, albumId);
     }
+
+    await this._cacheService.delete(`likes:${albumId}`);
   }
 
   async userLikeAlbums(userId, albumId) {
@@ -171,10 +185,8 @@ class AlbumsService {
         values: [albumId],
       };
       const { results } = await this._pool.query(query);
-
       await this._cacheService.set(`likes:${albumId}`, JSON.stringify(results));
-
-      return { likes: results };
+      return { likes: results.map(mapUserAlbumLikesDBToModel) };
     }
   }
 }

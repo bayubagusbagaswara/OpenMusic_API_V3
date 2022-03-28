@@ -8,7 +8,6 @@ const mapSongDBToModel = ({
   genre,
   duration,
   album_id,
-  cover_url,
 }) => ({
   id,
   title,
@@ -17,13 +16,16 @@ const mapSongDBToModel = ({
   genre,
   duration,
   albumId: album_id,
-  coverUrl: cover_url,
+
 });
 
-const mapAlbumDBToModel = ({ id, name, year }) => ({
+const mapAlbumDBToModel = ({
+  id, name, year, cover_url,
+}) => ({
   id,
   name,
   year,
+  coverUrl: cover_url,
 });
 
 const mapUserDBToModel = ({
@@ -45,6 +47,10 @@ const mapGetPlaylistActivitiesDBToModel = ({
   username, title, action, time,
 });
 
+const mapUserAlbumLikesDBToModel = ({ id, user_id, album_id }) => ({
+  id, userId: user_id, albumId: album_id,
+});
+
 module.exports = {
-  mapAlbumDBToModel, mapSongDBToModel, mapUserDBToModel, mapGetPlaylistDBToModel, mapGetPlaylistActivitiesDBToModel,
+  mapAlbumDBToModel, mapSongDBToModel, mapUserDBToModel, mapGetPlaylistDBToModel, mapGetPlaylistActivitiesDBToModel, mapUserAlbumLikesDBToModel,
 };
