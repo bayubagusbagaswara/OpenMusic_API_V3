@@ -1,9 +1,13 @@
 class AlbumsHandler {
-  constructor(service, validator) {
+  constructor(service, storageService, uploadValidator, validator) {
     this._service = service;
+    this._storageService = storageService;
+    this._uploadValidator = uploadValidator;
     this._validator = validator;
 
     this.postAlbumHandler = this.postAlbumHandler.bind(this);
+    // tambahkan getAllAlbums
+
     this.getAlbumByIdHandler = this.getAlbumByIdHandler.bind(this);
     this.putAlbumByIdHandler = this.putAlbumByIdHandler.bind(this);
     this.deleteAlbumByIdHandler = this.deleteAlbumByIdHandler.bind(this);
@@ -26,19 +30,33 @@ class AlbumsHandler {
     return response;
   }
 
-  async getAlbumByIdHandler(request) {
+  async getAlbumsHandler(request, h) {
+    const { albums } = await this._service.getAlbums();
+    const response = h.response({
+      status: 'success',
+      message: 'Berhasil mengambil daftar semua album',
+      data: {
+        albums,
+      },
+    });
+    response.code(200);
+    return response;
+  }
+
+  async getAlbumByIdHandler(request, h) {
     const { id } = request.params;
     const album = await this._service.getAlbumById(id);
     const songs = await this._service.getSongsByAlbumId(id);
 
     const albumContainsSongs = { ...album, songs };
-
-    return {
+    const response = h.response({
       status: 'success',
+      message: 'Berhasil mengambil album',
       data: {
         album: albumContainsSongs,
       },
-    };
+    });
+    response.code(200);
   }
 
   async putAlbumByIdHandler(request) {
@@ -62,6 +80,25 @@ class AlbumsHandler {
       status: 'success',
       message: 'Album berhasil dihapus',
     };
+  }
+
+  // Album Cover Handler
+  async postAlbumCoverHandler(request, h) {
+    const { cover } = request.payload;
+    this._uploadValidator.validateImageHeaders(cover.hapi.headers);
+    const filename = await this._storageService.writeFile(cover, cover.hapi);
+    const { id } = request.params;
+
+    const path = `http://${process.env.HOST}:${process.env.PORT}/albums/images/${filename}`;
+
+    await this._service.addAlbumCover(id, path);
+
+    const response = h.response({
+      status: 'success',
+      message: 'Sampul berhasil diunggah',
+    });
+    response.code(201);
+    return response;
   }
 }
 
