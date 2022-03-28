@@ -95,6 +95,29 @@
     ```
     require('crypto').randomBytes(64).toString('hex');
     ```
+- Install message broker RabbitMQ
+
+    ```
+    npm install amqplib
+    ```
+
+- Install handler static file
+
+    ```
+    npm install @hapi/inert
+    ```
+
+- Install AWS-SDK
+
+    ```
+    npm install aws-sdk
+    ```
+
+- Install Redis untuk caching data
+
+    ```
+    npm install redis
+    ```
 
 # Create Table
 - Table Albums
