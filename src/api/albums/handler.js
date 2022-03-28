@@ -6,11 +6,14 @@ class AlbumsHandler {
     this._validator = validator;
 
     this.postAlbumHandler = this.postAlbumHandler.bind(this);
-    // tambahkan getAllAlbums
-
+    this.getAlbumsHandler = this.getAlbumsHandler(this);
     this.getAlbumByIdHandler = this.getAlbumByIdHandler.bind(this);
     this.putAlbumByIdHandler = this.putAlbumByIdHandler.bind(this);
     this.deleteAlbumByIdHandler = this.deleteAlbumByIdHandler.bind(this);
+
+    this.postAlbumCoverHandler = this.postAlbumCoverHandler(this);
+    this.postAlbumLikeHandler = this.postAlbumLikeHandler(this);
+    this.getAlbumLikeHandler = this.getAlbumLikeHandler(this);
   }
 
   async postAlbumHandler(request, h) {
@@ -31,7 +34,8 @@ class AlbumsHandler {
   }
 
   async getAlbumsHandler(request, h) {
-    const { albums } = await this._service.getAlbums();
+    // pertama saat kirim request kita set cache nya 0, artinya belum ada data yang di caching
+    const { albums, isCache = 0 } = await this._service.getAlbums();
     const response = h.response({
       status: 'success',
       message: 'Berhasil mengambil daftar semua album',
@@ -40,15 +44,19 @@ class AlbumsHandler {
       },
     });
     response.code(200);
+
+    // jika isChace ada nilainya, maka tambahkan response header
+    if (isCache) response.header('X-Data-Source', 'cache');
     return response;
   }
 
   async getAlbumByIdHandler(request, h) {
     const { id } = request.params;
-    const album = await this._service.getAlbumById(id);
+    const { album, isCache = 0 } = await this._service.getAlbumById(id);
     const songs = await this._service.getSongsByAlbumId(id);
 
     const albumContainsSongs = { ...album, songs };
+
     const response = h.response({
       status: 'success',
       message: 'Berhasil mengambil album',
@@ -57,6 +65,9 @@ class AlbumsHandler {
       },
     });
     response.code(200);
+
+    if (isCache) response.header('X-Data-Source', 'cache');
+    return response;
   }
 
   async putAlbumByIdHandler(request) {
@@ -98,6 +109,42 @@ class AlbumsHandler {
       message: 'Sampul berhasil diunggah',
     });
     response.code(201);
+    return response;
+  }
+
+  /* Likes Album */
+  async postAlbumLikeHandler(request, h) {
+    const { id } = request.params;
+    const { id: userId } = request.auth.credentials;
+
+    await this._service.getAlbumById(id);
+    await this._service.addAlbumLike(id, userId);
+
+    const response = h
+      .response({
+        status: 'success',
+        message: 'Album berhasil ditambahkan ke daftar suka',
+      })
+      .code(201);
+
+    return response;
+  }
+
+  async getAlbumLikeHandler(request, h) {
+    const { id } = request.params;
+    const { likes, isCache = 0 } = await this._service.getLikeAlbum(id);
+
+    const response = h.response({
+      status: 'success',
+      data: {
+        likes: likes.length,
+      },
+    });
+    response.code(200);
+
+    // Jika menerima dari cache maka header dicustom
+    if (isCache) response.header('X-Data-Source', 'cache');
+
     return response;
   }
 }

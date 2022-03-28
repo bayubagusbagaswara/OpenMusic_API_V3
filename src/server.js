@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
+const path = require('path');
 
 // albums
 const albums = require('./api/albums');
@@ -43,13 +44,22 @@ const _exports = require('./api/exports');
 const ProducerService = require('./services/rabbitmq/ProducerService');
 const ExportsValidator = require('./validator/exports');
 
+// Uploads
+const StorageService = require('./services/storage/StorageService');
+const UploadsValidator = require('./validator/uploads');
+
+// cache
+const CacheService = require('./services/redis/CacheService');
+
 const init = async () => {
-  const albumsService = new AlbumsService();
+  const cacheService = new CacheService();
+  const albumsService = new AlbumsService(cacheService);
   const songsService = new SongsService();
   const usersService = new UsersService();
   const authenticationsService = new AuthenticationsService();
   const collaborationsService = new CollaborationsService();
-  const playlistsService = new PlaylistsService(collaborationsService);
+  const playlistsService = new PlaylistsService(collaborationsService, cacheService);
+  const storageService = new StorageService(path.resolve(__dirname, 'api/uploads/file/images'));
 
   const server = Hapi.server({
     port: process.env.PORT,
@@ -97,6 +107,8 @@ const init = async () => {
       plugin: albums,
       options: {
         service: albumsService,
+        storageService,
+        uploadValidator: UploadsValidator,
         validator: AlbumsValidator,
       },
     },
@@ -142,6 +154,7 @@ const init = async () => {
 
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
+    const statusCode = response.output ? response.output.statusCode : 200;
 
     if (response instanceof ClientError) {
       const newResponse = h.response({
@@ -152,6 +165,18 @@ const init = async () => {
       newResponse.code(response.statusCode);
       return newResponse;
     }
+
+    if (statusCode === 500) {
+      // Server ERROR!
+      console.error(response.message);
+      const serverResponse = h.response({
+        status: 'error',
+        message: 'Maaf, terjadi kegagalan pada server kami.',
+      });
+      serverResponse.code(500);
+      return serverResponse;
+    }
+    // jika bukan ClientError, lanjutkan dengan response sebelumnya (tanpa terintervensi)
     return response.continue || response;
   });
 
