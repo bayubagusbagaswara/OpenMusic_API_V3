@@ -24,6 +24,21 @@ class AlbumsService {
     return result.rows[0].id;
   }
 
+  async getAlbums() {
+    try {
+      const result = await this._cacheService.get('albums');
+      return { albums: JSON.parse(result), isCache: 1 };
+    } catch (error) {
+      const query = {
+        text: 'SELECT * FROM albums',
+      };
+      const { rows } = await this._pool.query(query);
+      await this._cacheService.set('albums', JSON.stringify(rows));
+      // return rows;
+      return { albums: { ...rows } };
+    }
+  }
+
   async getAlbumById(id) {
     const query = {
       text: 'SELECT * FROM albums WHERE id = $1',
