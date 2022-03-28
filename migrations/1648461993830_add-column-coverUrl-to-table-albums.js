@@ -4,7 +4,7 @@ exports.shorthands = undefined;
 
 exports.up = (pgm) => {
   pgm.addColumn('albums', {
-    coverUrl: {
+    cover_url: {
       type: 'TEXT',
     },
   });

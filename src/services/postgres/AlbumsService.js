@@ -40,17 +40,23 @@ class AlbumsService {
   }
 
   async getAlbumById(id) {
-    const query = {
-      text: 'SELECT * FROM albums WHERE id = $1',
-      values: [id],
-    };
+    try {
+      const result = await this._cacheService.get(`album:${id}`);
+      return { album: JSON.parse(result), isCache: 1 };
+    } catch (error) {
+      const query = {
+        text: 'SELECT * FROM albums WHERE id = $1',
+        values: [id],
+      };
+      const { results } = await this._pool.query(query);
 
-    const result = await this._pool.query(query);
+      if (!results.rows.length) {
+        throw new NotFoundError('Album tidak ditemukan');
+      }
 
-    if (!result.rows.length) {
-      throw new NotFoundError('Album tidak ditemukan');
+      await this._cacheService.set(`album:${id}`, JSON.stringify(results[0]));
+      return { album: { ...results.map(mapAlbumDBToModel)[0] } };
     }
-    return result.rows.map(mapAlbumDBToModel)[0];
   }
 
   async editAlbumById(id, { name, year }) {
@@ -72,18 +78,104 @@ class AlbumsService {
     };
 
     const result = await this._pool.query(query);
+
     if (!result.rows.length) {
       throw new NotFoundError('Album gagal dihapus. Id tidak ditemukan');
     }
   }
 
   async getSongsByAlbumId(id) {
+    try {
+      const result = await this._cacheService.get(`album-songs:${id}`);
+      return { songs: JSON.parse(result), isCache: 1 };
+    } catch (error) {
+      const query = {
+        text: 'SELECT id, title, performer FROM songs WHERE album_id = $1',
+        values: [id],
+      };
+      const { results } = await this._pool.query(query);
+      await this._cacheService.set(
+        `album-songs:${id}`,
+        JSON.stringify(results[0]),
+      );
+      return { songs: results.map(mapSongDBToModel) };
+    }
+  }
+
+  /** ADD COVER ALBUM */
+  async addAlbumCover(albumId, coverUrl) {
     const query = {
-      text: 'SELECT id, title, performer FROM songs WHERE album_id = $1',
-      values: [id],
+      text: 'UPDATE albums SET cover_url = $1 WHERE id = $2',
+      values: [coverUrl, albumId],
     };
+
     const result = await this._pool.query(query);
-    return result.rows.map(mapSongDBToModel);
+
+    if (!result.rows.length) {
+      throw new InvariantError('Cover gagal ditambahkan');
+    }
+  }
+
+  /** Likes Album */
+  async addAlbumLike(albumId, userId) {
+    const query = {
+      text: 'SELECT * FROM user_album_likes WHERE album_id = $1 AND user_id = $2',
+      values: [albumId, userId],
+    };
+
+    const result = await this._pool.query(query);
+
+    // cek apakah album sudah punya like
+    if (!result.rows.length) {
+      // jika belum ada, maka lakukan like pada album
+      await this.userLikeAlbums(userId, albumId);
+    } else {
+      // jika sudah ada, maka lakukan dislike pada album
+      await this.userDislikeAlbums(userId, albumId);
+    }
+  }
+
+  async userLikeAlbums(userId, albumId) {
+    const id = `user_album_likes-${nanoid(16)}`;
+    const query = {
+      text: 'INSERT INTO user_album_likes (id, user_id, album_id) VALUES ($1, $2, $3)',
+      values: [id, userId, albumId],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rows.length) {
+      throw new InvariantError('Like gagal ditambahkan');
+    }
+  }
+
+  async userDislikeAlbums(userId, albumId) {
+    const query = {
+      text: 'DELETE FROM user_album_likes WHERE album_id = $1 AND user_id = $2',
+      values: [albumId, userId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new InvariantError('Like gagal dihapus');
+    }
+  }
+
+  async getLikeAlbum(albumId) {
+    try {
+      const result = await this._cacheService.get(`likes:${albumId}`);
+      return { likes: JSON.parse(result), isCache: 1 };
+    } catch (error) {
+      const query = {
+        text: 'SELECT user_id FROM user_album_likes WHERE album_id = $1',
+        values: [albumId],
+      };
+      const { results } = await this._pool.query(query);
+
+      await this._cacheService.set(`likes:${albumId}`, JSON.stringify(results));
+
+      return { likes: results };
+    }
   }
 }
 
