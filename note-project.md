@@ -171,3 +171,15 @@
     ```
     TRUNCATE albums, songs, users, authentications, playlists, playlist_songs, playlist_song_activities, collaborations;
     ```
+
+
+- create table albums
+- create table songs
+- create table users
+- create table authentications
+- create table playlists
+- create table playlist_songs
+- create table collaborations
+- create table playlist_song_activities
+- add column coverUrl to table albums
+- create table user-album-likes
