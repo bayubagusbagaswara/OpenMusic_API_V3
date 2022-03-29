@@ -1,9 +1,9 @@
 class AlbumsHandler {
-  constructor(service, storageService, uploadValidator, validator) {
+  constructor(service, validator, storageService, uploadValidator) {
     this._service = service;
+    this._validator = validator;
     this._storageService = storageService;
     this._uploadValidator = uploadValidator;
-    this._validator = validator;
 
     this.postAlbumHandler = this.postAlbumHandler.bind(this);
     this.getAlbumsHandler = this.getAlbumsHandler.bind(this);
@@ -20,7 +20,7 @@ class AlbumsHandler {
     this._validator.validateAlbumPayload(request.payload);
     const { name, year } = request.payload;
 
-    const albumId = await this._service.addAlbum({ name, year });
+    const albumId = await this._service.addAlbum(name, year);
 
     const response = h.response({
       status: 'success',
@@ -33,7 +33,7 @@ class AlbumsHandler {
     return response;
   }
 
-  async getAlbumsHandler(request, h) {
+  async getAlbumsHandler(_request, h) {
     const { albums, isCache = 0 } = await this._service.getAlbums();
     const response = h.response({
       status: 'success',
