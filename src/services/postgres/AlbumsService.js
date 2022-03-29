@@ -31,7 +31,7 @@ class AlbumsService {
 
   async getAlbums() {
     try {
-      const result = await this._cacheService.get('albums');
+      const result = await this._cacheService.get('album');
       return { albums: JSON.parse(result), isCache: 1 };
     } catch (error) {
       const query = {
@@ -45,7 +45,7 @@ class AlbumsService {
 
       await this._cacheService.set('albums', JSON.stringify(mappedResult));
 
-      return { albums: mappedResult };
+      return { albums: { ...mappedResult } };
     }
   }
 
@@ -68,7 +68,7 @@ class AlbumsService {
       const mappedResult = result.rows.map(mapAlbumDBToModel)[0];
 
       await this._cacheService.set(`album:${id}`, JSON.stringify(mappedResult));
-      return { album: mappedResult };
+      return { album: { ...mappedResult } };
     }
   }
 
@@ -112,7 +112,7 @@ class AlbumsService {
       };
 
       const result = await this._pool.query(query);
-      const mappedResult = result.rows.map(mapSongDBToModel);
+      const mappedResult = result.rows.map(mapSongDBToModel)[0];
 
       // simpan di cache
       await this._cacheService.set(`album-songs:${id}`, JSON.stringify(mappedResult));
@@ -121,10 +121,10 @@ class AlbumsService {
   }
 
   /** ADD COVER ALBUM */
-  async addAlbumCover(albumId, coverUrl) {
+  async addAlbumCover(albumid, coverurl) {
     const query = {
       text: 'UPDATE albums SET cover_url = $1 WHERE id = $2',
-      values: [coverUrl, albumId],
+      values: [coverurl, albumid],
     };
 
     const result = await this._pool.query(query);
@@ -133,14 +133,14 @@ class AlbumsService {
       throw new InvariantError('Cover gagal ditambahkan');
     }
 
-    await this._cacheService.delete(`album:${albumId}`);
+    await this._cacheService.delete(`album:${albumid}`);
   }
 
   /** Likes Album */
-  async addAlbumLike(albumId, userId) {
+  async addAlbumLike(albumid, userid) {
     const query = {
       text: 'SELECT * FROM user_album_likes WHERE album_id = $1 AND user_id = $2',
-      values: [albumId, userId],
+      values: [albumid, userid],
     };
 
     const result = await this._pool.query(query);
@@ -148,13 +148,13 @@ class AlbumsService {
     // cek apakah album sudah punya like
     if (!result.rows.length) {
       // jika belum ada, maka lakukan like pada album
-      await this.addLikeAlbums(userId, albumId);
+      await this.addLikeAlbums(userid, albumid);
     } else {
       // jika sudah ada, maka lakukan dislike pada album
-      await this.addDislikeAlbums(userId, albumId);
+      await this.addDislikeAlbums(userid, albumid);
     }
 
-    await this._cacheService.delete(`likes:${albumId}`);
+    await this._cacheService.delete(`likes:${albumid}`);
   }
 
   async addLikeAlbums(userId, albumId) {

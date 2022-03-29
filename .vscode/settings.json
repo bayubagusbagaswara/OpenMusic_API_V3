@@ -1,5 +1,5 @@
 {
-  "editor.formatOnSave": true,
+  "editor.formatOnSave": false,
   "editor.lineHeight": 25,
   "editor.minimap.enabled": false,
   "editor.fontSize": 13,
@@ -22,5 +22,5 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   },
-  "eslint.validate": ["javascript"]
+  // "eslint.validate": ["javascript"]
 }
