@@ -38,10 +38,14 @@ class AlbumsService {
       const query = {
         text: 'SELECT * FROM albums',
       };
-      const { results } = await this._pool.query(query);
-      await this._cacheService.set('albums', JSON.stringify(results));
-      // return rows;
-      return { albums: { ...results.map(mapAlbumDBToModel) } };
+      const result = await this._pool.query(query);
+
+      // kita map dulu
+      const mappedResult = result.rows.map(mapAlbumDBToModel);
+
+      await this._cacheService.set('albums', JSON.stringify(mappedResult));
+
+      return { albums: mappedResult };
     }
   }
 
@@ -54,14 +58,17 @@ class AlbumsService {
         text: 'SELECT * FROM albums WHERE id = $1',
         values: [id],
       };
-      const { results } = await this._pool.query(query);
 
-      if (!results.rows.length) {
+      const result = await this._pool.query(query);
+
+      if (!result.rows.length) {
         throw new NotFoundError('Album tidak ditemukan');
       }
 
-      await this._cacheService.set(`album:${id}`, JSON.stringify(results[0]));
-      return { album: { ...results.map(mapAlbumDBToModel)[0] } };
+      const mappedResult = result.rows.map(mapAlbumDBToModel)[0];
+
+      await this._cacheService.set(`album:${id}`, JSON.stringify(mappedResult));
+      return { album: mappedResult };
     }
   }
 
@@ -96,19 +103,22 @@ class AlbumsService {
 
   async getSongsByAlbumId(id) {
     try {
+      // ambil songs dari cache
       const result = await this._cacheService.get(`album-songs:${id}`);
       return { songs: JSON.parse(result), isCache: 1 };
     } catch (error) {
+      // jika tidak ada di cache, maka kita lakukan query ulang ke database
       const query = {
         text: 'SELECT id, title, performer FROM songs WHERE album_id = $1',
         values: [id],
       };
-      const { results } = await this._pool.query(query);
-      await this._cacheService.set(
-        `album-songs:${id}`,
-        JSON.stringify(results[0]),
-      );
-      return { songs: results.map(mapSongDBToModel) };
+
+      const result = await this._pool.query(query);
+      const mappedResult = result.rows.map(mapSongDBToModel);
+
+      // simpan di cache
+      await this._cacheService.set(`album-songs:${id}`, JSON.stringify(mappedResult));
+      return { songs: mappedResult };
     }
   }
 
@@ -140,17 +150,17 @@ class AlbumsService {
     // cek apakah album sudah punya like
     if (!result.rows.length) {
       // jika belum ada, maka lakukan like pada album
-      await this.userLikeAlbums(userId, albumId);
+      await this.addLikeAlbums(userId, albumId);
     } else {
       // jika sudah ada, maka lakukan dislike pada album
-      await this.userDislikeAlbums(userId, albumId);
+      await this.addDislikeAlbums(userId, albumId);
     }
 
     await this._cacheService.delete(`likes:${albumId}`);
   }
 
-  async userLikeAlbums(userId, albumId) {
-    const id = `user_album_likes-${nanoid(16)}`;
+  async addLikeAlbums(userId, albumId) {
+    const id = `likes-${nanoid(16)}`;
     const query = {
       text: 'INSERT INTO user_album_likes (id, user_id, album_id) VALUES ($1, $2, $3)',
       values: [id, userId, albumId],
@@ -162,7 +172,7 @@ class AlbumsService {
     }
   }
 
-  async userDislikeAlbums(userId, albumId) {
+  async addDislikeAlbums(userId, albumId) {
     const query = {
       text: 'DELETE FROM user_album_likes WHERE album_id = $1 AND user_id = $2',
       values: [albumId, userId],
@@ -184,9 +194,14 @@ class AlbumsService {
         text: 'SELECT user_id FROM user_album_likes WHERE album_id = $1',
         values: [albumId],
       };
-      const { results } = await this._pool.query(query);
-      await this._cacheService.set(`likes:${albumId}`, JSON.stringify(results));
-      return { likes: results.map(mapUserAlbumLikesDBToModel) };
+
+      const result = await this._pool.query(query);
+      const mappedResult = result.rows.map(mapUserAlbumLikesDBToModel);
+
+      // simpan di cache
+      await this._cacheService.set(`likes:${albumId}`, JSON.stringify(mappedResult));
+
+      return { likes: mappedResult };
     }
   }
 }
