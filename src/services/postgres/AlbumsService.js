@@ -103,13 +103,11 @@ class AlbumsService {
 
   async getSongsByAlbumId(id) {
     try {
-      // ambil songs dari cache
       const result = await this._cacheService.get(`album-songs:${id}`);
       return { songs: JSON.parse(result), isCache: 1 };
     } catch (error) {
-      // jika tidak ada di cache, maka kita lakukan query ulang ke database
       const query = {
-        text: 'SELECT id, title, performer FROM songs WHERE album_id = $1',
+        text: 'SELECT * FROM songs WHERE album_id = $1',
         values: [id],
       };
 
@@ -162,7 +160,7 @@ class AlbumsService {
   async addLikeAlbums(userId, albumId) {
     const id = `likes-${nanoid(16)}`;
     const query = {
-      text: 'INSERT INTO user_album_likes (id, user_id, album_id) VALUES ($1, $2, $3)',
+      text: 'INSERT INTO user_album_likes(id, user_id, album_id) VALUES($1, $2, $3)',
       values: [id, userId, albumId],
     };
 

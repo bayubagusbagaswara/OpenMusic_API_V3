@@ -37,7 +37,6 @@ class AlbumsHandler {
     const { albums, isCache = 0 } = await this._service.getAlbums();
     const response = h.response({
       status: 'success',
-      message: 'Berhasil mengambil daftar semua album',
       data: {
         albums,
       },
@@ -58,7 +57,6 @@ class AlbumsHandler {
 
     const response = h.response({
       status: 'success',
-      message: 'Berhasil mengambil album',
       data: {
         album: albumContainsSongs,
       },
@@ -96,6 +94,7 @@ class AlbumsHandler {
   async postAlbumCoverHandler(request, h) {
     const { cover } = request.payload;
     this._uploadValidator.validateImageHeaders(cover.hapi.headers);
+
     const filename = await this._storageService.writeFile(cover, cover.hapi);
     const { id } = request.params;
 
@@ -113,11 +112,11 @@ class AlbumsHandler {
 
   // Album Like Handler
   async postAlbumLikeHandler(request, h) {
-    const { id: albumId } = request.params;
+    const { id } = request.params;
     const { id: userId } = request.auth.credentials;
 
-    await this._service.getAlbumById(albumId);
-    await this._service.addAlbumLike(albumId, userId);
+    await this._service.getAlbumById(id);
+    await this._service.addAlbumLike(id, userId);
 
     const response = h
       .response({
