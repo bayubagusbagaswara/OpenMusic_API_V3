@@ -5,10 +5,10 @@ class ExportsHandler {
     this._playlistsService = playlistsService;
     this._validator = validator;
 
-    this.postExportNotesHandler = this.postExportNotesHandler.bind(this);
+    this.postExportNotesHandler = this.postExportPlaylistsHandler.bind(this);
   }
 
-  async postExportNotesHandler(request, h) {
+  async postExportPlaylistsHandler(request, h) {
     this._validator.validateExportPlaylistsPayload(request.payload);
 
     const { id: userId } = request.auth.credentials;
@@ -28,6 +28,7 @@ class ExportsHandler {
     };
 
     await this._service.sendMessage('export:playlists', JSON.stringify(message));
+
     const response = h.response({
       status: 'success',
       message: 'Permintaan Anda dalam antrean',
