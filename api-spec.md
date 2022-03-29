@@ -1,467 +1,159 @@
 # API Specification
 
-# Kriteria 1 : Registrasi dan Autentikasi Pengguna
+# Kriteria 1 : Ekspor Lagu Pada Playlist
+API yang Anda buat harus tersedia fitur ekspor lagu pada playlist melalui route:
 
-## Create User
-- Method : `POST`
-- Endpoint : `/users`
-#### Request Body:
+Method : `POST`
+URL : `/export/playlists/{playlistId}`
+
+
+#### Body Request:
 
 ```json
 {
-  "username": "string",
-  "password": "string",
-  "fullname": "string"
+  "targetEmail": "string"
 }
 ```
-#### Response
-- Status Code : `201`
-- Body :
+
+Ketentuan:
+
+- Wajib menggunakan message broker dengan menggunakan RabbitMQ.
+- Nilai host server RabbitMQ wajib menggunakan environment variable RABBITMQ_SERVER
+- Hanya pemilik Playlist yang boleh mengekspor lagu.
+- Wajib mengirimkan program consumer.
+- Hasil ekspor berupa data json.
+- Dikirimkan melalui email menggunakan nodemailer.
+- Kredensial alamat dan password email pengirim wajib menggunakan environment variable `MAIL_ADDRESS` dan `MAIL_PASSWORD`.
+- Serta, nilai host dan port dari server SMTP juga wajib menggunakan environment variable `MAIL_HOST` dan `MAIL_PORT`.
+
+#### Response yang harus dikembalikan:
+
+- Status Code: 201
+- Response Body:
 
 ```json
 {
   "status": "success",
-  "data": {
-    "userId": "user_id"
-  }
+  "message": "Permintaan Anda sedang kami proses",
 }
 ```
-
-## Create Authentication
-- Method : `POST`
-- Endpoint : `/authentications`
-
-#### Request Body
+Struktur data JSON yang diekspor adalah seperti ini:
 
 ```json
 {
-  "username": "string",
-  "password": "string"
-}
-```
-#### Response
-- Status Code : `201`
-- Body :
-
-```json
-{
-  "status": "success",
-  "data": {
-    "accessToken": "token",
-    "refreshToken": "token"
-  }
-}
-```
-
-## Edit Authentication
-- Method : `PUT`
-- Endpoint : `/authentications`
-#### Request Body
-
-```json
-{
-  "refreshToken": "string"
-}
-```
-
-#### Response
-- Status Code : `200`
-- Body :
-
-```json
-{
-  "status": "success",
-  "data": {
-    "accessToken": "token"
-  }
-}
-```
-
-## Delete Authentication
-- Method : `DELETE`
-- Endpoint: `/authentications`
-#### Request Body
-
-```json
-{
-  "refreshToken": "string"
-}
-```
-
-#### Response
-- Status Code : `200`
-- Body : 
-
-```json
-{
-  "status": "success",
-  "message": "any"
-}
-```
-
-## Ketentuan:
-
-- `Username` harus unik.
-- Authentication menggunakan JWT token.
-- JWT token harus mengandung payload berisi userId yang merupakan id dari user autentik.
-- Nilai secret key token JWT baik access token ataupun refresh token wajib menggunakan environment variable `ACCESS_TOKEN_KEY` dan `REFRESH_TOKEN_KEY`.
-- Refresh token memiliki signature yang benar serta terdaftar di database.
-
-# Kriteria 2 : Pengelolaan Data Playlist 
-
-## Create Playlist
-- Method : `POST`
-- Endpoint : `/playlists`
-
-#### Request Body
-
-```json
-{
-  "name": "string"
-}
-```
-
-#### Response
-- Status Code : `201`
-- Body :
-
-```json
-{
-  "status": "success",
-  "data": {
-    "playlistId": "playlist_id"
-  }
-}
-```
-
-## Get All Playlists
-- Method : `GET`
-- Endpoint : `/playlists`
-
-#### Response
-- Status Code : `200`
-- Body :
-
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "playlistId": "string"
-    },
-    {
-      "playlistId": "string"
-    }
-  ]
-}
-```
-
-## Delete Playlist By ID
-- Method : `DELETE`
-- Endpoint : `/playlists/{id}`
-#### Response Body 
-- Status Code : `200`
-- Body :
-
-```json
-{
-  "status": "success",
-  "message": "any" 
-}
-```
-
-## Add Song To Playlist
-- Method : `POST`
-- Endpoint: `/playlists/{id}/songs`
-#### Request Body
-
-```json
-{
-  "songId": "string"
-}
-```
-#### Response
-- Status Code : `200`
-- Body : 
-
-```json
-{
-  "status": "success",
-  "message": "any"
-}
-```
-
-## Get Songs From Playlist
-- Method : `GET`
-- Endpoint : `/playlists/{id}/songs`
-#### Response
-- Status Code : `200`
-- Body :
-
-```json
-{
-  "status": "success",
-  "data" : {
-    "playlistId": "string",
-    "songs":[
+  "playlist": {
+    "id": "playlist-Mk8AnmCp210PwT6B",
+    "name": "My Favorite Coldplay Song",
+    "songs": [
       {
-        "songId": "string"
+        "id": "song-Qbax5Oy7L8WKf74l",
+        "title": "Life in Technicolor",
+        "performer": "Coldplay"
       },
       {
-        "songId": "string"
+        "id": "song-poax5Oy7L8WKllqw",
+        "title": "Centimeteries of London",
+        "performer": "Coldplay"
+      },
+      {
+        "id": "song-Qalokam7L8WKf74l",
+        "title": "Lost!",
+        "performer": "Coldplay"
       }
     ]
   }
 }
 ```
 
-## Delete Song From Playlist
-- Method : `DELETE`
-- Endpoint : `/playlists/{id}/songs`
+# Kriteria 2 : Mengunggah Sampul Album
+API yang Anda buat harus dapat mengunggah sampul album melalui route:
 
-#### Request Body 
-
-```json
-{
-  "songId": "string"
-}
-```
-#### Response
-- Status Code : `200`
-- Body :
+- Method : `POST`
+- URL : `/albums/{id}/covers`
+- Body Request (Form data)
 
 ```json
 {
-  "status": "success",
-  "message": "any"
+  "cover": "file"
 }
 ```
-## Ketentuan:
 
-- Playlist merupakan resource yang dibatasi (restrict). Untuk mengaksesnya membutuhkan access token.
-- Playlist yang muncul pada `GET /playlists` hanya yang ia miliki saja.
-- Hanya `owner playlist (atau kolabolator)` yang dapat menambahkan, melihat, dan menghapus lagu ke atau dari playlist.
-- `songId` dimasukkan/dihapus ke/dari playlist wajib bernilai id lagu yang valid.
+Ketentuan:
 
-#### Response endpoint GET /playlist
+- Tipe konten yang diunggah harus merupakan MIME types dari images.
+- Ukuran file cover maksimal 512000 Bytes.
+- Anda bisa menggunakan `File System (lokal)` atau `S3 Bucket` dalam menampung object.
+- Bila menggunakan S3 Bucket, nama bucket wajib menggunakan variable environment AWS_BUCKET_NAME.
+
+#### Response yang harus dikembalikan:
+
+- Status Code: 201
+- Response Body:
+
 ```json
 {
     "status": "success",
-    "data": {
-        "playlists": [
-            {
-                "id": "playlist-Qbax5Oy7L8WKf74l",
-                "name": "Lagu Indie Hits Indonesia",
-                "username": "dicoding"
-            },
-            {
-                "id": "playlist-lmA4PkM3LseKlkmn",
-                "name": "Lagu Untuk Membaca",
-                "username": "dicoding"
-            }
-        ]
-    }
+    "message": "Sampul berhasil diunggah"
 }
 ```
-#### Response endpoint GET /playlists/{id}/songs:
+
+Respons dari endpoint `GET /albums/{id}` harus menampilkan properti coverUrl. Itu berarti, alamat atau nama sampul album harus disimpan di dalam database. Berikut respons yang harus dikembalikan oleh endpoint GET /albums/{id}:
+
 ```json
 {
   "status": "success",
   "data": {
-    "playlist": {
-      "id": "playlist-Mk8AnmCp210PwT6B",
-      "name": "My Favorite Coldplay",
-      "username": "dicoding",
-      "songs": [
-        {
-          "id": "song-Qbax5Oy7L8WKf74l",
-          "title": "Life in Technicolor",
-          "performer": "Coldplay"
-        },
-        {
-          "id": "song-poax5Oy7L8WKllqw",
-          "title": "Centimeteries of London",
-          "performer": "Coldplay"
-        },
-        {
-          "id": "song-Qalokam7L8WKf74l",
-          "title": "Lost!",
-          "performer": "Coldplay"
-        }
-      ]
+    "album": {
+      "id": "album-Mk8AnmCp210PwT6B",
+      "name": "Viva la Vida",
+      "coverUrl": "http://...."
     }
   }
 }
 ```
-#### Data Playlist
-- Objek playlists yang disimpan pada server harus memiliki struktur seperti contoh di bawah ini:
-```json
-{
-    "id": "playlist-Qbax5Oy7L8WKf74l",
-    "name": "Lagu Indie Hits Indonesia",
-    "owner": "user-Qbax5Oy7L8WKf74l",
-}
-```
 
-## Keterangan:
+Ketentuan:
 
-- Properti `owner` merupakan `user_id` dari pembuat playlist. Anda bisa mendapatkan nilainya melalui artifacts payload JWT.
+- URL gambar harus dapat diakses dengan baik.
+- Bila album belum memiliki sampul, maka coverUrl bernilai null.
+- Bila menambahkan sampul pada album yang sudah memiliki sampul, maka sampul lama akan tergantikan.
 
-# Kriteria 3 : Menerapkan Foreign Key
+# Kriteria 3 : Menyukai Album
+API harus memiliki fitur menyukai, batal menyukai, serta melihat jumlah yang menyukai album. Berikut spesifikasinya:
 
-## Database wajib menerapkan Foreign Key
-Contohnya relasi:
-- Tabel songs terhadap albums;
-- Tabel playlists terhadap users;
-- Dan relasi tabel lainnya.
+Keterangan:
 
-# Kriteria 4 : Menerapkan Data Validation
-- Wajib menerapkan proses Data Validation pada Request Payload sesuai spesifikasi berikut:
+- Menyukai atau batal menyukai album merupakan resource strict sehingga dibutuhkan autentikasi untuk mengaksesnya. Hal ini bertujuan untuk mengetahui apakah pengguna sudah menyukai album.
+Jika pengguna belum menyukai album, maka aksi POST /albums/{id}/likes adalah menyukai album. Jika pengguna sudah menyukai album, maka aksinya batal menyukai.
 
-## POST /users:
-- username : string, required.
-- password : string, required.
-- fullname : string, required.
-## POST /authentications:
-- username : string, required.
-- password : string, required.
-## PUT /authentications:
-- refreshToken : string, required.
-## DELETE /authentications:
-- refreshToken : string, required.
-## POST /playlists:
-- name : string, required.
-# POST /playlists/{playlistId}/songs
-- songId : string, required.
+# Kriteria 4 : Menerapkan Server-Side Cache
+Menerapkan server-side cache pada jumlah yang menyukai sebuah album (GET /albums/{id}/likes).
+Cache harus bertahan selama 30 menit.
+Respons yang dihasilkan dari cache harus memiliki custom header properti X-Data-Source bernilai “cache”.
+Cache harus dihapus setiap kali ada perubahan jumlah like pada album dengan id tertentu.
+Memory caching engine wajib menggunakan Redis atau Memurai (Windows).
+Nilai host server Redis wajib menggunakan environment variable REDIS_SERVER
 
-# Kriteria 5 : Penanganan Eror (Error Handling)
+# Kriteria 5 : Pertahankan Fitur OpenMusic API versi 2 dan 1
 
-1. Ketika proses validasi data pada request payload tidak sesuai (gagal), server harus mengembalikan response:
+Pastikan fitur dan kriteria OpenMusic API versi 2 dan 1 tetap dipertahankan seperti:
 
-    - Status Code : `400 (Bad Request)`
-    - Response Body :
+- Pengelolaan Data Album
+- Pengelolaan Data Song
+- Fitur Registrasi dan Autentikasi Pengguna
+- Pengelolaan Data Playlist 
+- Menerapkan Foreign Key
+- Menerapkan Data Validation
+- Penanganan Eror (Error Handling)
 
-    ```json
-    {
-      "status": "fail",
-      "message": "<apa pun selama tidak kosong>"
-    }
-    ```
+# Testing
+- Kemudian pada variabel `exportEmail` berikan nilai dengan email Anda. Tujuannya, agar pengujian ekspor lagu di playlist akan terkirim ke email Anda. Sehingga Anda bisa memvalidasi program consumer Anda dapat mengirimkan email dengan baik.
 
-2. Ketika pengguna mengakses resource yang tidak ditemukan, server harus mengembalikan response:
+- Kemudian buka request `Uploads -> Add Cover Album with Valid File`. Di sini Anda perlu menetapkan berkas yang akan digunakan dalam mengunggah gambar. Silakan unduh gambar berikut.
 
-    - Status Code: `404 (Not Found)`
-    - Response body:
+- Kemudian buka tabs Body dan gunakan gambar tersebut pada key data.
 
-    ```json
-    {
-      "status": "fail",
-      "message": "<apa pun selama tidak kosong>"
-    }
-    ```
-
-3. Ketika pengguna mengakses resource yang dibatasi tanpa access token, server harus mengembalikan response:
-
-    - Status Code: `401 (Unauthorized)`
-    - Response Body:
-
-    ```json
-    {
-      "status": "fail",
-      "message": "<apa pun selama tidak kosong>"
-    }
-    ```
-
-4. Ketika pengguna memperbarui access token menggunakan refresh token yang tidak valid, server harus mengembalikan response:
-
-    - Status Code: `400 (Bad Request)`
-    - Response Body:
-
-    ```json
-    {
-      "status": "fail",
-      "message": "<apa pun selama tidak kosong>"
-    }
-    ```
-
-5. Ketika pengguna mengakses resource yang bukan haknya, server harus mengembalikan response:
-
-    - Status Code: `403 (Forbidden)`
-    - Response Body:
-
-    ```json
-    {
-      "status": "fail",
-      "message": "<apa pun selama tidak kosong>"
-    }
-    ```
-
-6. Ketika terjadi server eror, server harus mengembalikan response:
-
-    - Status Code: `500 (Internal Server Error)`
-    - Response Body:
-    ```json
-    {
-      "status": "error",
-      "message": "<apa pun selama tidak kosong>"
-    }
-    ```
-
-# Kriteria 6 : Pertahankan Fitur OpenMusic API versi 1 
-
-Pastikan fitur dan kriteria OpenMusic API versi 1 tetap dipertahankan seperti:
-
-- Pengelolaan data album.
-- Pengelolaan data song.
-- Menerapkan data validations resource album dan song.
+- Khusus untuk permintaan pada folder Uploads, jangan ikut sertakan untuk dijalankan menggunakan collections. Karena pengujian akan selalu gagal. Jadi pastikan ketika hendak menjalankan seluruh permintaan pada collection, pengujian pada folder Uploads tidak dicentang.
 
 
-# (OPSIONAL) Kriteria 1 : Memiliki fitur kolaborator playlist
-Hak akses kolaborator
-Ketika user ditambahkan sebagai kolaborator playlist oleh pemilik playlist. Maka hak akses user tersebut terhadap playlist adalah:
-
-- Playlist tampil pada permintaan `GET /playlists`.
-- Dapat menambahkan lagu ke dalam playlist.
-- Dapat menghapus lagu dari playlist.
-- Dapat melihat daftar lagu yang ada di playlist.
-- Dapat melihat aktifitas playlist (jika menerapkan kriteria opsional ke-2).
-
-# (OPSIONAL) Kriteria 2 : Memiliki Fitur Playlist Activities
-API yang dibuat harus memiliki fitur aktivitas playlist. Fitur ini digunakan untuk mencatat riwayat menambah atau menghapus lagu dari playlist oleh pengguna atau kolaborator.
-
-Riwayat aktivitas playlist dapat diakses melalui endpoint:
-
-- Method : `GET`
-- URL : `/playlists/{id}/activities`
-
-Server harus mengembalikan respons dengan:
-- Status code : 200
-- Response Body
-```json
-{
-  "status": "success",
-  "data": {
-    "playlistId": "playlist-Mk8AnmCp210PwT6B",
-    "activities": [
-      {
-        "username": "dicoding",
-        "title": "Life in Technicolor",
-        "action": "add",
-        "time": "2021-09-13T08:06:20.600Z"
-      },
-      {
-        "username": "dicoding",
-        "title": "Centimeteries of London",
-        "action": "add",
-        "time": "2021-09-13T08:06:39.852Z"
-      },
-      {
-        "username": "dimasmds",
-        "title": "Life in Technicolor",
-        "action": "delete",
-        "time": "2021-09-13T08:07:01.483Z"
-      }
-    ]
-  }
-}
-```
+- truncate albums, songs, users, authentications, playlists, playlist_songs, playlist_song_activities, collaborations, user_album_likes;
