@@ -5,7 +5,6 @@ const { mapAlbumDBToModel, mapSongDBToModel, mapUserAlbumLikesDBToModel } = requ
 const NotFoundError = require('../../exceptions/NotFoundError');
 
 class AlbumsService {
-  // kita inject cacheService di albumsService
   constructor(cacheService) {
     this._pool = new Pool();
     this._cacheService = cacheService;
@@ -14,7 +13,7 @@ class AlbumsService {
   async addAlbum(name, year) {
     const id = `album-${nanoid(16)}`;
     const query = {
-      text: 'INSERT INTO albums VALUES($1, $2, $3) RETURNING id',
+      text: 'INSERT INTO albums(id, name, year) VALUES($1, $2, $3) RETURNING id',
       values: [id, name, year],
     };
 
@@ -38,9 +37,10 @@ class AlbumsService {
       const query = {
         text: 'SELECT * FROM albums',
       };
+
       const result = await this._pool.query(query);
 
-      // kita map dulu
+      // map dulu
       const mappedResult = result.rows.map(mapAlbumDBToModel);
 
       await this._cacheService.set('albums', JSON.stringify(mappedResult));
@@ -167,6 +167,7 @@ class AlbumsService {
     };
 
     const result = await this._pool.query(query);
+
     if (!result.rows.length) {
       throw new InvariantError('Like gagal ditambahkan');
     }
