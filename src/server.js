@@ -16,7 +16,7 @@ const SongsService = require('./services/postgres/SongsService');
 const SongsValidator = require('./validator/songs');
 
 // error
-// const ClientError = require('./exceptions/ClientError');
+const errors = require('./api/errors');
 
 // users
 const users = require('./api/users');
@@ -38,7 +38,6 @@ const PlaylistsValidator = require('./validator/playlists');
 const collaborations = require('./api/collaborations');
 const CollaborationsService = require('./services/postgres/CollaborationsService');
 const CollaborationsValidator = require('./validator/collaborations');
-const ClientError = require('./exceptions/ClientError');
 
 // Exports
 const _exports = require('./api/exports');
@@ -101,6 +100,9 @@ const init = async () => {
 
   await server.register([
     {
+      plugin: errors,
+    },
+    {
       plugin: users,
       options: {
         service: usersService,
@@ -155,34 +157,6 @@ const init = async () => {
         validator: ExportsValidator,
       },
     }]);
-
-  server.ext('onPreResponse', (request, h) => {
-    const { response } = request;
-    const statusCode = response.output ? response.output.statusCode : 200;
-
-    if (response instanceof ClientError) {
-      const newResponse = h.response({
-        status: 'fail',
-        message: response.message,
-
-      });
-      newResponse.code(response.statusCode);
-      return newResponse;
-    }
-
-    if (statusCode === 500) {
-      // Server ERROR!
-      console.error(response.message);
-      const serverResponse = h.response({
-        status: 'error',
-        message: 'Maaf, terjadi kegagalan pada server kami.',
-      });
-      serverResponse.code(500);
-      return serverResponse;
-    }
-    // jika bukan ClientError, lanjutkan dengan response sebelumnya (tanpa terintervensi)
-    return response.continue || response;
-  });
 
   await server.start();
   console.log(`Server berjalan pada ${server.info.uri}`);
