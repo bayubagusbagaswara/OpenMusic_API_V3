@@ -16,6 +16,7 @@ class AlbumsHandler {
     this.getAlbumLikeHandler = this.getAlbumLikeHandler.bind(this);
   }
 
+  /* CRUD Album Handler */
   async postAlbumHandler(request, h) {
     this._validator.validateAlbumPayload(request.payload);
     const { name, year } = request.payload;
@@ -33,18 +34,19 @@ class AlbumsHandler {
     return response;
   }
 
-  async getAlbumsHandler(_request, h) {
+  async getAlbumsHandler(request, h) {
     const { albums, isCache = 0 } = await this._service.getAlbums();
-    const response = h.response({
-      status: 'success',
-      data: {
-        albums,
-      },
-    });
-    response.code(200);
 
-    // jika isChace ada nilainya, maka tambahkan response header
+    const response = h
+      .response({
+        status: 'success',
+        data: {
+          albums,
+        },
+      })
+      .code(200);
     if (isCache) response.header('X-Data-Source', 'cache');
+
     return response;
   }
 
@@ -53,26 +55,26 @@ class AlbumsHandler {
     const { album, isCache = 0 } = await this._service.getAlbumById(id);
     const { songs } = await this._service.getSongsByAlbumId(id);
 
-    const albumContainsSongs = { ...album, songs };
+    const albumWithSongs = { ...album, songs };
 
-    const response = h.response({
-      status: 'success',
-      data: {
-        album: albumContainsSongs,
-      },
-    });
-    response.code(200);
-
+    const response = h
+      .response({
+        status: 'success',
+        data: {
+          album: albumWithSongs,
+        },
+      })
+      .code(200);
     if (isCache) response.header('X-Data-Source', 'cache');
+
     return response;
   }
 
   async putAlbumByIdHandler(request) {
     this._validator.validateAlbumPayload(request.payload);
     const { id } = request.params;
-    const { name, year } = request.payload;
 
-    await this._service.editAlbumById(id, { name, year });
+    await this._service.editAlbumById(id, request.payload);
 
     return {
       status: 'success',
@@ -90,12 +92,13 @@ class AlbumsHandler {
     };
   }
 
-  // Album Cover Handler
+  /* Album Cover Handler */
   async postAlbumCoverHandler(request, h) {
     const { cover } = request.payload;
     this._uploadValidator.validateImageHeaders(cover.hapi.headers);
 
     const filename = await this._storageService.writeFile(cover, cover.hapi);
+
     const { id } = request.params;
 
     const path = `http://${process.env.HOST}:${process.env.PORT}/albums/images/${filename}`;
@@ -106,11 +109,13 @@ class AlbumsHandler {
       status: 'success',
       message: 'Sampul berhasil diunggah',
     });
+
     response.code(201);
+
     return response;
   }
 
-  // Album Like Handler
+  /* Likes Album */
   async postAlbumLikeHandler(request, h) {
     const { id } = request.params;
     const { id: userId } = request.auth.credentials;
@@ -122,8 +127,9 @@ class AlbumsHandler {
       .response({
         status: 'success',
         message: 'Album berhasil ditambahkan ke daftar suka',
-      });
-    response.code(201);
+      })
+      .code(201);
+
     return response;
   }
 
@@ -141,6 +147,7 @@ class AlbumsHandler {
 
     // Jika menerima dari cache maka header dicustom
     if (isCache) response.header('X-Data-Source', 'cache');
+
     return response;
   }
 }
