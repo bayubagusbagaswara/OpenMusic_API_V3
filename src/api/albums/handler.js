@@ -6,14 +6,14 @@ class AlbumsHandler {
     this._validator = validator;
 
     this.postAlbumHandler = this.postAlbumHandler.bind(this);
-    this.getAlbumsHandler = this.getAlbumsHandler(this);
+    this.getAlbumsHandler = this.getAlbumsHandler.bind(this);
     this.getAlbumByIdHandler = this.getAlbumByIdHandler.bind(this);
     this.putAlbumByIdHandler = this.putAlbumByIdHandler.bind(this);
     this.deleteAlbumByIdHandler = this.deleteAlbumByIdHandler.bind(this);
 
-    this.postAlbumCoverHandler = this.postAlbumCoverHandler(this);
-    this.postAlbumLikeHandler = this.postAlbumLikeHandler(this);
-    this.getAlbumLikeHandler = this.getAlbumLikeHandler(this);
+    this.postAlbumCoverHandler = this.postAlbumCoverHandler.bind(this);
+    this.postAlbumLikeHandler = this.postAlbumLikeHandler.bind(this);
+    this.getAlbumLikeHandler = this.getAlbumLikeHandler.bind(this);
   }
 
   async postAlbumHandler(request, h) {
@@ -33,8 +33,7 @@ class AlbumsHandler {
     return response;
   }
 
-  async getAlbumsHandler(_request, h) {
-    // pertama saat kirim request kita set cache nya 0, artinya belum ada data yang di caching
+  async getAlbumsHandler(request, h) {
     const { albums, isCache = 0 } = await this._service.getAlbums();
     const response = h.response({
       status: 'success',
@@ -114,11 +113,11 @@ class AlbumsHandler {
 
   // Album Like Handler
   async postAlbumLikeHandler(request, h) {
-    const { id } = request.params;
+    const { id: albumId } = request.params;
     const { id: userId } = request.auth.credentials;
 
-    await this._service.getAlbumById(id);
-    await this._service.addAlbumLike(id, userId);
+    await this._service.getAlbumById(albumId);
+    await this._service.addAlbumLike(albumId, userId);
 
     const response = h
       .response({
