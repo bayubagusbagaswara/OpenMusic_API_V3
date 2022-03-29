@@ -112,7 +112,7 @@ class AlbumsHandler {
     return response;
   }
 
-  /* Likes Album */
+  // Album Like Handler
   async postAlbumLikeHandler(request, h) {
     const { id } = request.params;
     const { id: userId } = request.auth.credentials;
