@@ -11,7 +11,7 @@ class AlbumsService {
     this._cacheService = cacheService;
   }
 
-  async addAlbum({ name, year }) {
+  async addAlbum(name, year) {
     const id = `album-${nanoid(16)}`;
     const query = {
       text: 'INSERT INTO albums VALUES($1, $2, $3) RETURNING id',
@@ -27,7 +27,7 @@ class AlbumsService {
     // jika berhasil addAlbum, maka delete cache
     await this._cacheService.delete('albums');
 
-    return result.rows[0].id;
+    return result.rows.map(mapAlbumDBToModel)[0].id;
   }
 
   async getAlbums() {
