@@ -1,31 +1,22 @@
 class ExportsHandler {
-  // kita inject playlistsService untuk mengecek access untuk playlists
-  constructor(service, playlistService, validator) {
+  constructor(service, playlistsService, validator) {
     this._service = service;
-    this._playlistService = playlistService;
     this._validator = validator;
+    this._playlistsService = playlistsService;
 
-    this.postExportNotesHandler = this.postExportPlaylistsHandler.bind(this);
+    this.postExportPlaylistsHandler = this.postExportPlaylistsHandler.bind(this);
   }
 
   async postExportPlaylistsHandler(request, h) {
     this._validator.validateExportPlaylistsPayload(request.payload);
-
     const { id: userId } = request.auth.credentials;
-    const { id: playlistId } = request.params;
-
-    await this._playlistService.verifyPlaylistAccess(playlistId, userId);
+    const { playlistId } = request.params;
+    const { targetEmail } = request.payload;
 
     // Playlist check
-    // await this._playlistsService.getPlaylistDetails(playlistId);
+    await this._playlistsService.verifyPlaylistAccess(playlistId, userId);
 
-    // Verify playlist owner
-    // await this._playlistsService.verifyPlaylistOwner(playlistId, userId);
-
-    const message = {
-      playlistId,
-      targetEmail: request.payload.targetEmail,
-    };
+    const message = { playlistId, targetEmail };
 
     await this._service.sendMessage('export:playlists', JSON.stringify(message));
 
