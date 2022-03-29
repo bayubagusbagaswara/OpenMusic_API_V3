@@ -121,18 +121,51 @@ Ketentuan:
 # Kriteria 3 : Menyukai Album
 API harus memiliki fitur menyukai, batal menyukai, serta melihat jumlah yang menyukai album. Berikut spesifikasinya:
 
+## Create Album Likes
+- Keterangan : Menyukai atau batal menyukai album
+- Method : `POST`
+- URL : `/albums/{id}/likes`
+
+#### Response
+- Status Code : `201`
+- Body :
+
+```json
+{
+  "status": "success",
+  "message": "any"
+}
+```
+
+## Get Album Likes
+- Keterangan : Melihat jumlah yang menyukai album
+- Method : `GET`
+- URL : `/albums/{id}/likes`
+#### Response
+- Status Code : `200`
+- Body :
+
+```json
+{
+  "status": "success",
+  "data" :{
+    "likes": "number"
+  }
+
+}
+```
 Keterangan:
 
 - Menyukai atau batal menyukai album merupakan resource strict sehingga dibutuhkan autentikasi untuk mengaksesnya. Hal ini bertujuan untuk mengetahui apakah pengguna sudah menyukai album.
 Jika pengguna belum menyukai album, maka aksi POST /albums/{id}/likes adalah menyukai album. Jika pengguna sudah menyukai album, maka aksinya batal menyukai.
 
 # Kriteria 4 : Menerapkan Server-Side Cache
-Menerapkan server-side cache pada jumlah yang menyukai sebuah album (GET /albums/{id}/likes).
-Cache harus bertahan selama 30 menit.
-Respons yang dihasilkan dari cache harus memiliki custom header properti X-Data-Source bernilai “cache”.
-Cache harus dihapus setiap kali ada perubahan jumlah like pada album dengan id tertentu.
-Memory caching engine wajib menggunakan Redis atau Memurai (Windows).
-Nilai host server Redis wajib menggunakan environment variable REDIS_SERVER
+- Menerapkan server-side cache pada jumlah yang menyukai sebuah album `(GET /albums/{id}/likes)`.
+- Cache harus bertahan selama 30 menit.
+- Respons yang dihasilkan dari cache harus memiliki custom header properti X-Data-Source bernilai “cache”.
+- Cache harus dihapus setiap kali ada perubahan jumlah like pada album dengan id tertentu.
+- Memory caching engine wajib menggunakan Redis atau Memurai (Windows).
+- Nilai host server Redis wajib menggunakan environment variable REDIS_SERVER
 
 # Kriteria 5 : Pertahankan Fitur OpenMusic API versi 2 dan 1
 
