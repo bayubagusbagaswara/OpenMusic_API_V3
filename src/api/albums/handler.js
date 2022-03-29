@@ -18,7 +18,7 @@ class AlbumsHandler {
 
   async postAlbumHandler(request, h) {
     this._validator.validateAlbumPayload(request.payload);
-    const { name = 'untitled', year } = request.payload;
+    const { name, year } = request.payload;
 
     const albumId = await this._service.addAlbum({ name, year });
 
@@ -33,7 +33,7 @@ class AlbumsHandler {
     return response;
   }
 
-  async getAlbumsHandler(request, h) {
+  async getAlbumsHandler(_request, h) {
     // pertama saat kirim request kita set cache nya 0, artinya belum ada data yang di caching
     const { albums, isCache = 0 } = await this._service.getAlbums();
     const response = h.response({
@@ -53,7 +53,7 @@ class AlbumsHandler {
   async getAlbumByIdHandler(request, h) {
     const { id } = request.params;
     const { album, isCache = 0 } = await this._service.getAlbumById(id);
-    const songs = await this._service.getSongsByAlbumId(id);
+    const { songs } = await this._service.getSongsByAlbumId(id);
 
     const albumContainsSongs = { ...album, songs };
 
@@ -124,9 +124,8 @@ class AlbumsHandler {
       .response({
         status: 'success',
         message: 'Album berhasil ditambahkan ke daftar suka',
-      })
-      .code(201);
-
+      });
+    response.code(201);
     return response;
   }
 
@@ -144,7 +143,6 @@ class AlbumsHandler {
 
     // Jika menerima dari cache maka header dicustom
     if (isCache) response.header('X-Data-Source', 'cache');
-
     return response;
   }
 }
