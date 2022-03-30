@@ -5,8 +5,8 @@ const ClientError = require('../../exceptions/ClientError');
 class ErrorHandler {
   errorHandler(request, h) {
     const { response } = request;
+    const statusCode = response.output ? response.output.statusCode : 200;
 
-    // CLIENT ERROR
     if (response instanceof ClientError) {
       const newResponse = h.response({
         status: 'fail',
@@ -14,19 +14,19 @@ class ErrorHandler {
       });
       newResponse.code(response.statusCode);
       return newResponse;
-    } else if (response instanceof Error) {
-      const { statusCode, payload } = response.output;
-      if (statusCode === 401) {
-        return h.response(payload).code(401);
-      }
-      const newResponse = h.response({
-        status: 'error',
-        message: 'Maaf, terjadi kesalahan di sisi Server',
-      });
-      console.log(response);
-      newResponse.code(500);
-      return newResponse;
     }
+
+    if (statusCode === 500) {
+      console.error(response.message);
+      const serverResponse = h.response({
+        status: 'error',
+        message: 'Maaf, Terjadi kegagalan pada server kami.',
+      });
+      serverResponse.code(500);
+      return serverResponse;
+    }
+
+    // jika bukan ClientError, lanjutkan dengan response sebelumnya (tanpa terintervensi)
     return response.continue || response;
   }
 }
