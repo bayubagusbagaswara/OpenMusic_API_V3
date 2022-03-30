@@ -169,7 +169,7 @@
 - Menghapus semua data table
 
     ```
-    TRUNCATE albums, songs, users, authentications, playlists, playlist_songs, playlist_song_activities, collaborations;
+    TRUNCATE albums, songs, users, authentications, playlists, playlist_songs, playlist_song_activities, collaborations, user_album_likes;
     ```
 
 

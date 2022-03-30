@@ -66,6 +66,7 @@ class AlbumsService {
       const mappedResult = result.rows.map(mapAlbumDBToModel)[0];
 
       await this._cacheService.set(`album:${id}`, JSON.stringify(mappedResult));
+
       return { album: { ...mappedResult } };
     }
   }
@@ -112,16 +113,14 @@ class AlbumsService {
       const result = await this._pool.query(query);
       const mappedResult = result.rows.map(mapSongDBToModel);
 
-      // simpan di cache
       await this._cacheService.set(`album-songs:${id}`, JSON.stringify(mappedResult));
       return { songs: mappedResult };
     }
   }
 
-  /** ADD COVER ALBUM */
   async addAlbumCover(albumId, coverUrl) {
     const query = {
-      text: 'UPDATE albums SET cover_url = $1 WHERE id = $2',
+      text: 'UPDATE albums SET cover_url = $1 WHERE id = $2 RETURNING id',
       values: [coverUrl, albumId],
     };
 
@@ -134,8 +133,8 @@ class AlbumsService {
     await this._cacheService.delete(`album:${albumId}`);
   }
 
-  /** Likes Album */
-  async addAlbumLike(albumId, userId) {
+  async addAlbumLikes(albumId, userId) {
+    // pertama kita ambil semua data dari user_album_likes berdasarkan album_id dan user_id
     const query = {
       text: 'SELECT * FROM user_album_likes WHERE album_id = $1 AND user_id = $2',
       values: [albumId, userId],
@@ -143,22 +142,24 @@ class AlbumsService {
 
     const result = await this._pool.query(query);
 
-    // cek apakah album sudah punya like
+    // cek apakah user sudah punya relasi ke album (album likes)
     if (!result.rows.length) {
-      // jika belum ada, maka lakukan like pada album
-      await this.userLikeAlbums(userId, albumId);
+      // jika belum ada, maka user akan melakukan like pada album
+      await this.doLikeAlbum(userId, albumId);
     } else {
-      // jika sudah ada, maka lakukan dislike pada album
-      await this.userDislikeAlbums(userId, albumId);
+      // jika sudah ada, maka user akan melakukan dislike pada album
+      await this.doDislikeAlbum(userId, albumId);
     }
 
     await this._cacheService.delete(`likes:${albumId}`);
   }
 
-  async userLikeAlbums(userId, albumId) {
+  async doLikeAlbum(userId, albumId) {
+    // user melakukan like pada album, makanya kita perlu parameter userId dan albumId
+    // userId dan albumId ini harus valid dulu, makanya di handle kita akan cek dulu
     const id = `likes-${nanoid(16)}`;
     const query = {
-      text: 'INSERT INTO user_album_likes(id, user_id, album_id) VALUES($1, $2, $3)',
+      text: 'INSERT INTO user_album_likes(id, user_id, album_id) VALUES($1, $2, $3) RETURNING id',
       values: [id, userId, albumId],
     };
 
@@ -169,9 +170,10 @@ class AlbumsService {
     }
   }
 
-  async userDislikeAlbums(userId, albumId) {
+  async doDislikeAlbum(userId, albumId) {
+    // hapus relasi antara userId dan albumId di table user_album_likes
     const query = {
-      text: 'DELETE FROM user_album_likes WHERE album_id = $1 AND user_id = $2',
+      text: 'DELETE FROM user_album_likes WHERE album_id = $1 AND user_id = $2 RETURNING id',
       values: [albumId, userId],
     };
 
@@ -182,7 +184,7 @@ class AlbumsService {
     }
   }
 
-  async getLikeAlbum(albumId) {
+  async getAllAlbumLikes(albumId) {
     try {
       const result = await this._cacheService.get(`likes:${albumId}`);
       return { likes: JSON.parse(result), isCache: 1 };
