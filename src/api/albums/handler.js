@@ -51,10 +51,11 @@ class AlbumsHandler {
   }
 
   async getAlbumByIdHandler(request, h) {
-    const { id } = request.params;
-    const { album, isCache = 0 } = await this._service.getAlbumById(id);
-    const { songs } = await this._service.getSongsByAlbumId(id);
+    const { id: albumId } = request.params;
+    const { album, isCache = 0 } = await this._service.getAlbumById(albumId);
+    const { songs } = await this._service.getSongsByAlbumId(albumId);
 
+    // harapanya balikannya adalah data album (id, name, cover_url) dan songs[{}]
     const albumWithSongs = { ...album, songs };
 
     const response = h
@@ -109,9 +110,7 @@ class AlbumsHandler {
       status: 'success',
       message: 'Sampul berhasil diunggah',
     });
-
     response.code(201);
-
     return response;
   }
 

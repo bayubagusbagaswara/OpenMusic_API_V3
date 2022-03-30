@@ -26,7 +26,7 @@ class AlbumsService {
     // jika berhasil addAlbum, maka delete cache
     await this._cacheService.delete('albums');
 
-    return result.rows.map(mapAlbumDBToModel)[0].id;
+    return result.rows[0].id;
   }
 
   async getAlbums() {
@@ -39,8 +39,6 @@ class AlbumsService {
       };
 
       const result = await this._pool.query(query);
-
-      // map dulu
       const mappedResult = result.rows.map(mapAlbumDBToModel);
 
       await this._cacheService.set('albums', JSON.stringify(mappedResult));
@@ -121,10 +119,10 @@ class AlbumsService {
   }
 
   /** ADD COVER ALBUM */
-  async addAlbumCover(albumid, coverurl) {
+  async addAlbumCover(albumId, coverUrl) {
     const query = {
       text: 'UPDATE albums SET cover_url = $1 WHERE id = $2',
-      values: [coverurl, albumid],
+      values: [coverUrl, albumId],
     };
 
     const result = await this._pool.query(query);
@@ -133,14 +131,14 @@ class AlbumsService {
       throw new InvariantError('Cover gagal ditambahkan');
     }
 
-    await this._cacheService.delete(`album:${albumid}`);
+    await this._cacheService.delete(`album:${albumId}`);
   }
 
   /** Likes Album */
-  async addAlbumLike(albumid, userid) {
+  async addAlbumLike(albumId, userId) {
     const query = {
       text: 'SELECT * FROM user_album_likes WHERE album_id = $1 AND user_id = $2',
-      values: [albumid, userid],
+      values: [albumId, userId],
     };
 
     const result = await this._pool.query(query);
@@ -148,16 +146,16 @@ class AlbumsService {
     // cek apakah album sudah punya like
     if (!result.rows.length) {
       // jika belum ada, maka lakukan like pada album
-      await this.addLikeAlbums(userid, albumid);
+      await this.userLikeAlbums(userId, albumId);
     } else {
       // jika sudah ada, maka lakukan dislike pada album
-      await this.addDislikeAlbums(userid, albumid);
+      await this.userDislikeAlbums(userId, albumId);
     }
 
-    await this._cacheService.delete(`likes:${albumid}`);
+    await this._cacheService.delete(`likes:${albumId}`);
   }
 
-  async addLikeAlbums(userId, albumId) {
+  async userLikeAlbums(userId, albumId) {
     const id = `likes-${nanoid(16)}`;
     const query = {
       text: 'INSERT INTO user_album_likes(id, user_id, album_id) VALUES($1, $2, $3)',
@@ -171,7 +169,7 @@ class AlbumsService {
     }
   }
 
-  async addDislikeAlbums(userId, albumId) {
+  async userDislikeAlbums(userId, albumId) {
     const query = {
       text: 'DELETE FROM user_album_likes WHERE album_id = $1 AND user_id = $2',
       values: [albumId, userId],
