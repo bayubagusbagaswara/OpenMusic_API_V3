@@ -50,7 +50,6 @@ const UploadsValidator = require('./validator/uploads');
 
 // cache
 const CacheService = require('./services/redis/CacheService');
-// const ClientError = require('./exceptions/ClientError');
 
 const init = async () => {
   const cacheService = new CacheService();
@@ -159,34 +158,6 @@ const init = async () => {
       },
     }]);
 
-  // await server.ext('onPreResponse', (request, h) => {
-  //   // mendapatkan konteks response dari request
-  //   const { response } = request;
-  //   const statusCode = response.output ? response.output.statusCode : 200;
-  //   if (response instanceof ClientError) {
-  //     // membuat response baru dari response toolkit sesuai kebutuhan error handling
-  //     const newResponse = h.response({
-  //       status: 'fail',
-  //       message: response.message,
-  //     });
-  //     newResponse.code(response.statusCode);
-  //     return newResponse;
-  //   }
-
-  //   if (statusCode === 500) {
-  //     // Server ERROR!
-  //     console.error(response.message);
-  //     const serverResponse = h.response({
-  //       status: 'error',
-  //       message: 'Maaf, Terjadi kegagalan pada server kami.',
-  //     });
-  //     serverResponse.code(500);
-  //     return serverResponse;
-  //   }
-
-  //   // jika bukan ClientError, lanjutkan dengan response sebelumnya (tanpa terintervensi)
-  //   return response.continue || response;
-  // });
   await server.start();
   console.log(`Server berjalan pada ${server.info.uri}`);
 };
