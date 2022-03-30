@@ -13,7 +13,11 @@ class ExportsHandler {
     const { playlistId } = request.params;
     const { targetEmail } = request.payload;
 
-    // Playlist check
+    // cek playlist ada atau tidak
+    await this._playlistsService.verifyExistingPlaylist(playlistId);
+
+    // lalu cek apakah user memiliki akses terhadap playlist tersebut
+    // jika user memiliki akses, maka dia boleh untuke export playlist nya
     await this._playlistsService.verifyPlaylistAccess(playlistId, userId);
 
     const message = { playlistId, targetEmail };

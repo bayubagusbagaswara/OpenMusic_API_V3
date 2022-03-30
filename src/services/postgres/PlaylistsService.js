@@ -171,6 +171,19 @@ class PlaylistsService {
     }
   }
 
+  async verifyExistingPlaylist(playlistId) {
+    const query = {
+      text: 'SELECT * FROM playlists WHERE id = $1',
+      values: [playlistId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Playlist tidak ditemukan');
+    }
+  }
+
   async verifyPlaylistAccess(playlistId, userId) {
     try {
       await this.verifyPlaylistOwner(playlistId, userId);
