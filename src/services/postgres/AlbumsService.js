@@ -107,12 +107,12 @@ class AlbumsService {
       return { songs: JSON.parse(result), isCache: 1 };
     } catch (error) {
       const query = {
-        text: 'SELECT * FROM songs WHERE album_id = $1',
+        text: 'SELECT id, title, performer FROM songs WHERE album_id = $1',
         values: [id],
       };
 
       const result = await this._pool.query(query);
-      const mappedResult = result.rows.map(mapSongDBToModel)[0];
+      const mappedResult = result.rows.map(mapSongDBToModel);
 
       // simpan di cache
       await this._cacheService.set(`album-songs:${id}`, JSON.stringify(mappedResult));
